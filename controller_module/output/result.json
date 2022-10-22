@@ -1,0 +1,17 @@
+{
+  "files_types": [
+    ".py",
+    ".txt",
+    ".yml",
+    ".md",
+    ".yaml",
+    ".gitattributes",
+    ".gitignore",
+    "theHarvester",
+    "Dockerfile",
+    ".ini"
+  ],
+  "password": [
+    "canyoufindthis"
+  ]
+}

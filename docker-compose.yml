@@ -1,0 +1,57 @@
+version: "3.3"
+services:
+
+  controller_module:
+    image: controller_module:latest
+    environment:
+      RABBITMQ_HOST: message_broker
+      RABBITMQ_PORT: 5672
+    volumes:
+      - ./controller_module/output:/output
+    depends_on:
+      - message_broker
+    networks:
+      - controller_module_network
+
+  analyze_module:
+    image: analyze_module:latest
+    environment:
+      RABBITMQ_HOST: message_broker
+      RABBITMQ_PORT: 5672
+    depends_on:
+      - message_broker
+    volumes:
+      - ./theHarvester:/theHarvester
+    networks:
+      - analyze_module_network
+
+  password_module:
+    image: password_module:latest
+    environment:
+      RABBITMQ_HOST: message_broker
+      RABBITMQ_PORT: 5672
+    depends_on:
+      - message_broker
+    volumes:
+      - ./theHarvester:/theHarvester
+    networks:
+      - password_module_network
+
+  message_broker:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      - password_module_network
+      - analyze_module_network
+      - controller_module_network
+
+networks:
+  analyze_module_network:
+    driver: bridge
+  password_module_network:
+    driver: bridge
+  controller_module_network:
+    driver: bridge

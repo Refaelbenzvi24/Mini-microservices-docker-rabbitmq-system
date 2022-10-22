@@ -1,0 +1,15 @@
+[[package]]
+name = "pika"
+version = "1.3.1"
+requires_python = ">=3.4"
+summary = "Pika Python AMQP Client Library"
+
+[metadata]
+lock_version = "4.0"
+content_hash = "sha256:a2b7c6c4aedda0e98fe87a1af3ff6b6b9c7ef809121c0f7b1fe30f3b9a5b685a"
+
+[metadata.files]
+"pika 1.3.1" = [
+    {url = "https://files.pythonhosted.org/packages/9d/70/173abbf8b0bc8260a4e6d39a5f633da114bfebeb35715e6c05d17dc77403/pika-1.3.1.tar.gz", hash = "sha256:beb19ff6dd1547f99a29acc2c6987ebb2ba7c44bf44a3f8e305877c5ef7d2fdc"},
+    {url = "https://files.pythonhosted.org/packages/c9/4f/6abbb34a39352f40c66974e3ec4db7c79ef9b8bef06d7d3c9e0f3c6e039c/pika-1.3.1-py3-none-any.whl", hash = "sha256:89f5e606646caebe3c00cbdbc4c2c609834adde45d7507311807b5775edac8e0"},
+]
