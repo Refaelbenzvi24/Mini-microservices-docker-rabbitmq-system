@@ -1,42 +1,38 @@
-import logging
+import pika
 import os
 import time
 
-import pika
-from pika import BlockingConnection
+from pika.exceptions import AMQPConnectionError
 
-logger = logging.getLogger(__name__)
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST") or 'localhost'
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT") or '5672')
 
 
 class MessageBroker:
 	def __init__(self):
-		self.host = os.environ.get("RABBITMQ_HOST") or 'localhost'
-		self.port = int(os.environ.get("RABBITMQ_PORT") or '5672')
-		self.connection: BlockingConnection | None = None
+		self.connection_params = pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT)
+		self.connection: pika.BlockingConnection | None = None
+		self.test_connection()
 	
 	def __delete__(self):
 		self.close_connection()
 	
-	@staticmethod
-	def wait_for_connection():
+	def test_connection(self):
 		
 		while True:
 			try:
-				message_broker = MessageBroker()
-				message_broker.connect()
-				message_broker.connection.close()
+				pika.BlockingConnection(self.connection_params).close()
 				break
-			
-			except Exception:
-				logger.info("Waiting for message broker...")
-				time.sleep(1)
-				continue
+			except AMQPConnectionError:
+				print("Waiting for RabbitMQ to start...")
+				time.sleep(5)
 	
-	def connect(self):
-		connection_params = pika.ConnectionParameters(host=self.host, port=self.port)
-		connection = pika.BlockingConnection(connection_params)
-		self.connection = connection
-		return connection.channel()
+	def get_connection(self):
+		if self.connection is None:
+			self.connection = pika.BlockingConnection(self.connection_params)
+			return self.connection
+		
+		return self.connection
 	
 	def close_connection(self):
 		if self.connection:
@@ -44,27 +40,44 @@ class MessageBroker:
 
 
 class Producer:
+	__message_broker: MessageBroker | None = None
+	connection: pika.BlockingConnection | None = None
+	
 	def __init__(self, queue: str, exchange=""):
+		if Producer.__message_broker is None:
+			Producer.__message_broker = MessageBroker()
 		self.exchange = exchange
-		self.message_broker = MessageBroker()
 		self.queue = queue
-		self.channel = self.message_broker.connect()
-		self.channel.queue_declare(queue)
+		
+		if self.connection is None:
+			Producer.connection = Producer.__message_broker.get_connection()
+		
+		self.channel = self.connection.channel()
+		self.channel.queue_declare(queue=self.queue, durable=True)
 	
 	def publish(self, body):
 		self.channel.basic_publish(exchange=self.exchange, routing_key=self.queue, body=body)
-		logger.info(f" [x] Sent message to '{self.queue}' queue")
+		print(f" [x] Sent message to '{self.queue}' queue")
 
 
 class Consumer:
-	def __init__(self, queue: str):
-		self.message_broker = MessageBroker()
-		self.channel = self.message_broker.connect()
-		result = self.channel.queue_declare(queue=queue)
-		self.queue = result.method.queue
+	__message_broker: MessageBroker | None = None
+	connection: pika.BlockingConnection | None = None
+	
+	def __init__(self, queue: str, exchange=""):
+		if Consumer.__message_broker is None:
+			Consumer.__message_broker = MessageBroker()
+		self.exchange = exchange
+		self.queue = queue
+		
+		if self.connection is None:
+			Consumer.connection = Consumer.__message_broker.get_connection()
+		
+		self.channel = self.connection.channel()
+		
+		self.channel.queue_declare(queue=self.queue)
 	
 	def subscribe(self, callback):
 		self.channel.basic_consume(queue=self.queue, on_message_callback=callback, auto_ack=True)
-		
-		logger.info(f"started consuming messages from '{self.queue}' queue")
+		print(f"Subscribing for messages from '{self.queue}' queue")
 		self.channel.start_consuming()

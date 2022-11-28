@@ -51,7 +51,6 @@ if __name__ == '__main__':
 	logger.info("Controller module is running and listening...")
 	
 	fileSystemHelper.write_to_json_file({}, JSON_OUTPUT_PATH)
-	MessageBroker.wait_for_connection()
 	password_producer()
 	analyze_producer()
 	controller_consumer()
